@@ -1,4 +1,5 @@
 from datetime import date, datetime, time
+from enum import Enum
 
 
 class Validator(object):
@@ -246,3 +247,32 @@ class VTime(VDTBase):
         '%H:%M:%S',
     ]
     type = time
+
+
+class VEnum(VType):
+    def __init__(self, *args, **kwargs):
+        enum = kwargs.get('enum')
+        if enum is None:
+            raise ValueError('Must set enum for {}'.format(self.clsname))
+        if not issubclass(enum, Enum):
+            raise TypeError('Value for enum most be subclass of Enum for {}'.format(self.clsname))
+        self.type = enum
+        # also set as .enum for ease
+        self.enum = enum
+
+    def coerce_type_to_string(self, value):
+        return str(value.value)
+
+    def coerce_string_to_type(self, value):
+        try:
+            return self.enum(value)
+        except ValueError:
+            pass
+        # If the values of the enum are not strings, then iterate and
+        # compare as strings.
+        for enum_value in self.enum:
+            if value == str(enum_value.value):
+                return enum_value
+        raise ValueError(
+            'Unable to match value {!r} against an enum member from {!r}'.format(
+                value, self.enum))

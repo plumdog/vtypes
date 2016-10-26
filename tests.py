@@ -1,5 +1,6 @@
 from unittest import TestCase
 from datetime import date, datetime, time
+from enum import Enum
 
 from vtypes import (
     Validator,
@@ -14,6 +15,7 @@ from vtypes import (
     VDate,
     VDateTime,
     VTime,
+    VEnum,
 )
 
 
@@ -52,7 +54,7 @@ class _VTypeBase(object):
             self.validator = Validator(**kwargs)
 
     def _get_for_kind(self, kind, attr_kind):
-        
+
         values_attr_format = '{attr_kind}_to_{kind}'
         if kind == 'string':
             validator_method = self.validator.to_strings
@@ -437,4 +439,82 @@ class VTimeTestCase(_VTypeBase, TestCase):
         dict(mytime=''),
         dict(mytime=None),
         dict(mytime='not-a-time'),
+    ]
+
+
+class MyEnum(Enum):
+    option1 = 'Option 1'
+    option2 = 'Option 2'
+
+
+
+class VEnumTestCase(_VTypeBase, TestCase):
+
+    vtype = VEnum
+    vtype_kwargs = dict(enum=MyEnum)
+
+    ok_to_strings = [
+        (dict(myenum=MyEnum('Option 1')),
+         dict(myenum='Option 1')),
+        (dict(myenum='Option 1'),
+         dict(myenum='Option 1')),
+    ]
+    ok_to_types = [
+        (dict(myenum='Option 1'),
+         dict(myenum=MyEnum('Option 1'))),
+        (dict(myenum=MyEnum('Option 1')),
+         dict(myenum=MyEnum('Option 1'))),
+    ]
+    bad_to_strings = [
+        dict(),
+        dict(myenum='bad'),
+        dict(other=MyEnum('Option 1')),
+    ]
+    bad_to_types = [
+        dict(),
+        dict(other=MyEnum('Option 1')),
+        dict(other='Option 1'),
+        dict(myenum='bad'),
+        dict(myenum=1),
+        dict(myenum=''),
+        dict(myenum=None),
+    ]
+
+
+class MyNonStringEnum(Enum):
+    option1 = 1
+    option2 = (2, 3)
+
+
+class VNonStringEnumTestCase(_VTypeBase, TestCase):
+
+    vtype = VEnum
+    vtype_kwargs = dict(enum=MyNonStringEnum)
+    vkey = 'myenum'
+
+    ok_to_strings = [
+        (dict(myenum=MyNonStringEnum(1)),
+         dict(myenum='1')),
+        (dict(myenum='1'),
+         dict(myenum='1')),
+    ]
+    ok_to_types = [
+        (dict(myenum='1'),
+         dict(myenum=MyNonStringEnum(1))),
+        (dict(myenum=MyNonStringEnum(1)),
+         dict(myenum=MyNonStringEnum(1))),
+    ]
+    bad_to_strings = [
+        dict(),
+        dict(myenum='bad'),
+        dict(other=MyNonStringEnum(1)),
+    ]
+    bad_to_types = [
+        dict(),
+        dict(other=MyNonStringEnum(1)),
+        dict(other=1),
+        dict(myenum='bad'),
+        dict(myenum=1),
+        dict(myenum=''),
+        dict(myenum=None),
     ]
